@@ -26,6 +26,9 @@ dependencies {
     //querydsl 추가
     implementation 'com.querydsl:querydsl-jpa'
 
+    // query 확인용
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.8.0'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.h2database:h2'
     annotationProcessor 'org.projectlombok:lombok'
