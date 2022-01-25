@@ -42,6 +42,7 @@ tasks.named('test') {
 
 //querydsl 추가 시작
 def querydslDir = "$buildDir/generated/querydsl"
+
 querydsl {
     library = "com.querydsl:querydsl-apt" // 사용할 AnnotationProcesoor 정의
     jpa = true
