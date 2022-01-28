@@ -14,7 +14,7 @@ import static io.hkarling.qeurydsl.entity.QMember.*;
 @Repository
 public class MemberJpaRepository {
 
-    private final EntityManager em;
+    private final EntityManager em; // Proxy 만 주입이 되어 Transaction 단위로 Entity Manager 를 할당해준다.
     private final JPAQueryFactory queryFactory;
 
     public MemberJpaRepository(EntityManager em) {
