@@ -6,15 +6,18 @@ import static org.springframework.util.StringUtils.hasText;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.hkarling.qeurydsl.dto.MemberSearchCondition;
 import io.hkarling.qeurydsl.dto.MemberTeamDTO;
 import io.hkarling.qeurydsl.dto.QMemberTeamDTO;
+import io.hkarling.qeurydsl.entity.Member;
 import java.util.List;
 import javax.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 
 public class MemberRepositoryCustomImpl implements MemberRepositoryCustom {
 
@@ -73,7 +76,7 @@ public class MemberRepositoryCustomImpl implements MemberRepositoryCustom {
 
     @Override
     public Page<MemberTeamDTO> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
-        List<MemberTeamDTO> results = queryFactory
+        List<MemberTeamDTO> content = queryFactory
             .select(new QMemberTeamDTO(
                 member.id.as("memberId"),
                 member.username,
@@ -102,7 +105,18 @@ public class MemberRepositoryCustomImpl implements MemberRepositoryCustom {
             )
             .fetchCount();
 
-        return new PageImpl<>(results, pageable, total);
+        // countQuery 최적화: 마지막 페이지 조회시 count 쿼리 생략.
+        JPAQuery<Member> countQuery = queryFactory
+            .selectFrom(member)
+            .where(
+                usernameEq(condition.getUsername()),
+                teamNameEq(condition.getTeamName()),
+                ageGoe(condition.getAgeGoe()),
+                ageLoe(condition.getAgeLoe())
+            );
+
+//        return new PageImpl<>(content, pageable, total);
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchCount);
     }
 
     private BooleanExpression usernameEq(String username) {
