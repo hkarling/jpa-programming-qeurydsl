@@ -6,6 +6,7 @@ import static org.springframework.util.StringUtils.hasText;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.hkarling.qeurydsl.dto.MemberSearchCondition;
@@ -17,15 +18,22 @@ import javax.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.support.PageableExecutionUtils;
 
-public class MemberRepositoryCustomImpl implements MemberRepositoryCustom {
+public class MemberRepositoryCustomImpl extends QuerydslRepositorySupport implements MemberRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
+    /**
+     * Creates a new {@link QuerydslRepositorySupport} instance for the given domain type.
+     *
+     */
     public MemberRepositoryCustomImpl(EntityManager em) {
+        super(Member.class);
         this.queryFactory = new JPAQueryFactory(em);
     }
+
 
     @Override
     public List<MemberTeamDTO> search(MemberSearchCondition condition) {
@@ -70,6 +78,30 @@ public class MemberRepositoryCustomImpl implements MemberRepositoryCustom {
         List<MemberTeamDTO> contents = results.getResults();
         long total = results.getTotal();
 
+        return new PageImpl<>(contents, pageable, total);
+
+    }
+
+    public Page<MemberTeamDTO> searchPageSimple2(MemberSearchCondition condition, Pageable pageable) {
+        JPQLQuery<MemberTeamDTO> jpaQuery = from(member)
+            .leftJoin(member.team, team)
+            .where(
+                usernameEq(condition.getUsername()),
+                teamNameEq(condition.getTeamName()),
+                ageGoe(condition.getAgeGoe()),
+                ageLoe(condition.getAgeLoe())
+            )
+            .select(new QMemberTeamDTO(
+                member.id.as("memberId"),
+                member.username,
+                member.age,
+                team.id.as("teamId"),
+                team.name.as("teamName")));
+
+        JPQLQuery<MemberTeamDTO> query = getQuerydsl().applyPagination(pageable, jpaQuery); // offset 과 limit 라인 삭제 가능. Sort 지원 안함 -> 파라미터로 처리
+        List<MemberTeamDTO> contents = query.fetch();
+
+        long total = contents.size();
         return new PageImpl<>(contents, pageable, total);
 
     }
